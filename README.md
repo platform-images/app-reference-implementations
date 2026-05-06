@@ -1,6 +1,6 @@
 # app-reference-implementations
 
-Reference applications that consume the hardened base images from [platform-images/hardened-base](https://github.com/platform-images/hardened-base). Each app is a minimal but real service — not a toy — built with a proper multi-stage Dockerfile using the platform's distroless runtime images.
+Reference applications that consume the hardened base images from [platform-images/hardened-base](https://github.com/platform-images/hardened-base). Each app is a minimal but real service built with a multi-stage Dockerfile using the platform's distroless runtime images.
 
 ## Apps
 
@@ -24,17 +24,20 @@ Every app uses the same two-stage pattern:
 
 ```dockerfile
 # Build stage — toolchain available (npm, pip, mvn)
-FROM ghcr.io/platform-images/<runtime>-base:1.0.0 AS builder
-...
+# USER root overrides the nonroot default so package installs succeed
+FROM ghcr.io/platform-images/<runtime>-base:1.0.0@sha256:<digest> AS builder
+USER root
+WORKDIR /app
+# ... install dependencies ...
 
 # Runtime stage — distroless, no shell, no package manager
 FROM ghcr.io/platform-images/<runtime>-base:1.0.0-distroless
 LABEL org.opencontainers.image.source="..."
 LABEL org.opencontainers.image.licenses="Apache-2.0"
-...
+# ... copy built artefacts only ...
 ```
 
-The build stage has the toolchain. The runtime stage has nothing except the app and its dependencies — no shell, no package manager, no curl.
+Base images are pinned to their SHA digest. Renovate automatically opens PRs to update these pins when a new base image version is published.
 
 ## CI pipeline
 
@@ -48,24 +51,30 @@ Runs on every pull request:
 | SCA | Trivy (fs) | Known CVEs in dependency manifests |
 | Build + image scan | Trivy (image) | Known CVEs in the built container image |
 
-Only apps with changed files are scanned. If no `apps/` files change, all apps are checked.
+Only apps with changed files are checked. If no `apps/` files change, all apps are checked.
 
 ### Release (`release.yml`)
 
-Triggered by a tag in the format `<app>/v<semver>`, e.g. `nodejs-api/v1.0.0`:
+Triggers automatically when any `apps/*/Dockerfile` changes on main — which happens when a Renovate digest-bump PR merges. Can also be triggered manually.
+
+For each changed app:
 
 1. Build multi-arch image (`linux/amd64`, `linux/arm64`)
-2. Push to GHCR as `ghcr.io/platform-images/<app>:<version>` and `:latest`
+2. Push to GHCR tagged `latest` and `sha-<git-sha>`
 3. Sign with Cosign (keyless, via GitHub OIDC)
 4. Generate SPDX SBOM with Syft
 5. Attest SBOM to the image manifest
-6. Create GitHub Release with pull instructions and verification command
+6. Create GitHub Release
 
-## Publishing a release
+## Triggering a release manually
+
+Go to **Actions → Release → Run workflow** and select the app (or `all`).
+
+## Pulling an image
 
 ```bash
-git tag nodejs-api/v1.0.0
-git push origin nodejs-api/v1.0.0
+docker pull ghcr.io/platform-images/nodejs-api:latest
+docker pull ghcr.io/platform-images/nodejs-api:sha-<git-sha>
 ```
 
 ## Verifying a signed image
@@ -74,8 +83,14 @@ git push origin nodejs-api/v1.0.0
 cosign verify \
   --certificate-identity-regexp="https://github.com/platform-images/app-reference-implementations" \
   --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
-  ghcr.io/platform-images/nodejs-api:1.0.0
+  ghcr.io/platform-images/nodejs-api:latest
 ```
+
+## Required secret
+
+The workflows pull base images from the private `platform-images/hardened-base` packages. Add a secret named `GHCR_TOKEN` to this repo — a classic PAT with `write:packages` scope.
+
+Settings → Secrets and variables → Actions → New repository secret.
 
 ## Repo structure
 
@@ -84,6 +99,8 @@ apps/
   nodejs-api/
     src/index.js
     package.json
+    package-lock.json
+    .dockerignore
     Dockerfile
   python-api/
     src/main.py
