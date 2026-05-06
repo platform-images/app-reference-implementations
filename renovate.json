@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:base"],
-  "schedule": ["before 6am on Monday"],
+  "schedule": ["at any time"],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate — Dependency Updates",
   "dependencyDashboardApproval": false,
@@ -9,6 +9,7 @@
   "labels": ["renovate", "dependencies"],
   "ignoreDeps": ["docker/dockerfile"],
   "pinDigests": true,
+  "prCreation": "immediate",
   "packageRules": [
     {
       "description": "Platform base image digest bumps — auto-merge",
@@ -17,6 +18,7 @@
       "matchUpdateTypes": ["digest"],
       "automerge": true,
       "automergeType": "pr",
+      "platformAutomerge": true,
       "commitMessageTopic": "base image {{depName}}"
     },
     {
