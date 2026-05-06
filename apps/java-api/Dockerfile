@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build stage — Maven available
 FROM ghcr.io/platform-images/openjdk-base:1.0.0@sha256:39dda08361dcc9d9253a7e9904e92438511b5e15de3e633ac5edc3dcbda81871 AS builder
+USER root
 WORKDIR /app
 COPY pom.xml .
 RUN mvn dependency:go-offline -q
