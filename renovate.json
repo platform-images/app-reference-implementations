@@ -9,13 +9,6 @@
   "labels": ["renovate", "dependencies"],
   "ignoreDeps": ["docker/dockerfile"],
   "pinDigests": true,
-  "hostRules": [
-    {
-      "matchHost": "ghcr.io",
-      "hostType": "docker",
-      "token": "{{ secrets.GITHUB_COM_TOKEN }}"
-    }
-  ],
   "packageRules": [
     {
       "description": "Platform base image digest bumps — auto-merge",
