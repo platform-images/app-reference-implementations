@@ -10,6 +10,8 @@
   "ignoreDeps": ["docker/dockerfile"],
   "pinDigests": true,
   "prCreation": "immediate",
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "packageRules": [
     {
       "description": "Platform base image digest bumps — auto-merge",
