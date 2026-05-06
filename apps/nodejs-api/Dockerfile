@@ -7,7 +7,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Runtime stage — no shell, minimal attack surface
-FROM ghcr.io/platform-images/nodejs-base:1.0.0-distroless
+FROM ghcr.io/platform-images/nodejs-base:1.0.0-distroless@sha256:69218ac8a47dc49cf13cfa74280d696ec4e6e8e9772181cb7b91356620398e37
 ARG BUILD_DATE
 ARG GIT_REVISION
 LABEL org.opencontainers.image.source="https://github.com/platform-images/app-reference-implementations"
